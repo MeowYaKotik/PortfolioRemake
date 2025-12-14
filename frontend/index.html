@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Remake AI - Улучшение видео</title>
+    <link rel="icon" type="image/x-icon" href="remake.ico">
+    <style>
+        /* --- ДИЗАЙН И ПЕРЕМЕННЫЕ --- */
+        :root {
+            --accent: #00ff88; /* Зеленый неон */
+            --accent-glow: rgba(0, 255, 136, 0.4);
+            --bg: #050505;
+            --card-bg: #111111;
+            --text: #ffffff;
+            --text-gray: #aaaaaa;
+            --line-color: #ffffff;
+            --error: #ff4d4d;
+        }
+
+        body {
+            margin: 0; padding: 0; background-color: var(--bg); color: var(--text);
+            font-family: system-ui, -apple-system, sans-serif; 
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none; user-select: none;
+        }
+
+        a { text-decoration: none; color: inherit; }
+        ul { list-style: none; padding: 0; }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* --- 1. HERO SECTION --- */
+        .hero {
+            text-align: center;
+            padding: 80px 0 40px 0;
+            background: radial-gradient(circle at center, rgba(0, 255, 136, 0.05) 0%, transparent 70%);
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            background: linear-gradient(to right, #fff, #bbb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero .subtitle {
+            font-size: 1.2rem;
+            color: var(--text-gray);
+            margin-bottom: 40px;
+            max-width: 700px;
+            margin-left: auto; 
+            margin-right: auto;
+        }
+
+        .asterisk-note {
+            font-size: 0.8rem;
+            color: #555;
+            margin-top: 20px;
+            display: block;
+        }
+
+        .hero-features {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .feature-tag {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid #333;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            color: var(--accent);
+        }
+
+        /* КНОПКА (CTA) */
+        .cta-btn {
+            display: inline-block;
+            background: var(--accent);
+            color: #000;
+            font-weight: bold;
+            font-size: 1.2rem;
+            padding: 16px 40px;
+            border-radius: 50px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        .cta-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 40px var(--accent-glow);
+        }
+
+        /* --- 2. ЭТАПЫ (STEPS) --- */
+        .steps-section { padding: 60px 0; border-top: 1px solid #222; }
+        .section-title { text-align: center; font-size: 2rem; margin-bottom: 40px; }
+        
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 30px;
+            text-align: center;
+        }
+
+        .step-card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 16px;
+            border: 1px solid #222;
+            position: relative;
+        }
+
+        @media (min-width: 900px) {
+            .step-card:not(:last-child)::after {
+                content: "→";
+                position: absolute;
+                right: -25px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: #333;
+                font-size: 1.5rem;
+            }
+        }
+
+        .step-icon { font-size: 2.5rem; margin-bottom: 15px; display: block; }
+        .step-card h3 { margin-bottom: 10px; color: var(--accent); font-size: 1.1rem;}
+        .step-card p { color: var(--text-gray); font-size: 0.9rem; }
+
+        /* --- 3. ГАЛЕРЕЯ --- */
+        .gallery-section { padding: 60px 0; border-top: 1px solid #222; }
+        .tabs { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 30px; }
+        .tab-btn {
+            background: var(--card-bg); color: var(--text); border: 1px solid #333;
+            padding: 8px 16px; border-radius: 30px; cursor: pointer; font-size: 0.95rem; transition: all 0.3s ease;
+        }
+        .tab-btn:hover { border-color: var(--accent); }
+        .tab-btn.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: bold; }
+        .gallery { display: grid; grid-template-columns: 1fr; gap: 40px; }
+        @media (min-width: 900px) { .gallery { grid-template-columns: 1fr 1fr; } }
+        .showcase-item { background: var(--card-bg); padding: 15px; border-radius: 16px; border: 1px solid #222; display: flex; flex-direction: column; }
+        .showcase-item.hidden { display: none; }
+        .item-header { margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .badge { background: rgba(0, 255, 136, 0.1); color: var(--accent); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
+        .item-title { font-size: 1.1rem; font-weight: 600; }
+        /* Слайдер тех.стили */
+        .video-compare-wrapper { position: relative; width: 100%; padding-top: 56.25%; background: #000; border-radius: 10px; overflow: hidden; cursor: col-resize; user-select: none; }
+        .video-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; }
+        video { display: block; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+        .after-layer { width: 50%; border-right: 2px solid var(--line-color); z-index: 2; will-change: width; box-shadow: 0 0 10px rgba(255, 255, 255, 0.2); }
+        .content-fixer { position: absolute; top: 0; left: 0; height: 100%; overflow: hidden; }
+        .handle { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 32px; height: 32px; background: rgba(255,255,255,0.95); border-radius: 50%; z-index: 3; box-shadow: 0 0 10px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; pointer-events: none; }
+        .handle::after { content: "↔"; color: #000; font-weight: bold; font-size: 14px; }
+        .label { position: absolute; top: 10px; padding: 3px 8px; background: rgba(0,0,0,0.7); font-size: 11px; border-radius: 4px; font-weight: bold; pointer-events: none; white-space: nowrap; z-index: 10; }
+        .label-after { left: 10px; color: #ffffff; }
+        .label-before { right: 10px; color: var(--accent); z-index: 1; }
+
+        /* --- 4. ПРЕИМУЩЕСТВА (BENEFITS) --- */
+        .benefits-section { padding: 60px 0; background: #080808; border-top: 1px solid #222; }
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .benefit-card {
+            background: var(--card-bg); padding: 25px; border-radius: 12px; border: 1px solid #222;
+        }
+        .benefit-card h3 { color: #fff; margin-bottom: 10px; font-size: 1.2rem; }
+        .benefit-card p { color: var(--text-gray); font-size: 0.95rem; line-height: 1.5; }
+
+
+        /* --- 5. СТОИМОСТЬ --- */
+        .pricing-section { padding: 60px 0; border-top: 1px solid #222; }
+        
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .rate-card {
+            background: var(--card-bg);
+            border: 1px solid #333;
+            border-radius: 16px;
+            padding: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .rate-card::before {
+            content: "";
+            position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+            background: var(--accent);
+        }
+
+        .rate-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .rate-title { font-size: 1.4rem; font-weight: bold; color: #fff; }
+        .rate-price { font-size: 1.8rem; font-weight: bold; color: var(--accent); }
+        .rate-min { font-size: 0.9rem; color: #666; margin-top: 5px; }
+
+        .rate-details { margin-top: 20px; border-top: 1px solid #222; padding-top: 20px; }
+        .rate-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.95rem; }
+        .rate-label { color: var(--text-gray); }
+        .rate-value { color: #fff; font-weight: bold; }
+
+        .price-note {
+            text-align: center; margin-top: 30px; color: #555; font-size: 0.9rem; max-width: 600px; margin-left: auto; margin-right: auto;
+        }
+
+        /* --- 6. FAQ (ВОПРОСЫ) --- */
+        .faq-section { padding: 60px 0; max-width: 800px; margin: 0 auto; }
+        .faq-item { border-bottom: 1px solid #222; }
+        .faq-item details { padding: 20px 0; cursor: pointer; }
+        .faq-item summary { font-size: 1.1rem; font-weight: 500; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+        .faq-item summary::after { content: "+"; font-size: 1.5rem; color: var(--accent); }
+        .faq-item details[open] summary::after { content: "-"; }
+        .faq-item p { margin-top: 15px; color: var(--text-gray); line-height: 1.6; }
+        
+        .warning-text { color: var(--error); font-weight: bold; margin-top: 10px; font-size: 0.9rem;}
+
+        /* --- FOOTER --- */
+        footer { text-align: center; padding: 40px 0; color: #555; font-size: 0.9rem; border-top: 1px solid #111; }
+
+        @media (max-width: 600px) {
+            .hero h1 { font-size: 2rem; }
+            .rate-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+        }
+    </style>
+</head>
+<body oncontextmenu="return false;">
+
+    <section class="hero">
+        <div class="container">
+            <div class="hero-features">
+                <span class="feature-tag">✨ 4K Upscale</span>
+                <span class="feature-tag">⚡ 60 FPS</span>
+                <span class="feature-tag">💎 Без сжатия</span>
+            </div>
+            
+            <h1>Профессиональный результат<br>за 2 минуты<span style="color:var(--accent)">*</span></h1>
+            
+            <p class="subtitle">Искусственный интеллект улучшит качество, добавит плавность и уберет шумы. Полная конфиденциальность ваших материалов.</p>
+            
+            <a href="https://t.me/Remake4K_Bot" class="cta-btn">Запустить бота</a>
+
+            <span class="asterisk-note">* Время обработки зависит от длительности, разрешения исходного видео и загруженности серверов.</span>
+        </div>
+    </section>
+
+    <section class="steps-section">
+        <div class="container">
+            <h2 class="section-title">Как мы работаем</h2>
+            <div class="steps-grid">
+                <div class="step-card">
+                    <span class="step-icon">📤</span>
+                    <h3>1. Загрузка</h3>
+                    <p>Отправьте видео файлом. Бот сразу рассчитает точную стоимость.</p>
+                </div>
+                <div class="step-card">
+                    <span class="step-icon">💳</span>
+                    <h3>2. Оплата</h3>
+                    <p>Оплатите заказ через ЮKassa (карты РФ). Деньги замораживаются до старта.</p>
+                </div>
+                <div class="step-card">
+                    <span class="step-icon">🔄</span>
+                    <h3>3. Статус</h3>
+                    <p>Вы видите этап работы: "В очереди" -> "Обработка" -> "Загрузка".</p>
+                </div>
+                <div class="step-card">
+                    <span class="step-icon">✅</span>
+                    <h3>4. Результат</h3>
+                    <p>Получите готовый файл без водяных знаков и сжатия.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="gallery-section">
+        <div class="container">
+            <h2 class="section-title">Примеры обработки</h2>
+            <div class="tabs">
+                <button class="tab-btn active" onclick="filterSelection('all')">Все</button>
+                <button class="tab-btn" onclick="filterSelection('people')">Люди</button>
+                <button class="tab-btn" onclick="filterSelection('nature')">Природа</button>
+                <button class="tab-btn" onclick="filterSelection('anime')">Аниме</button>
+            </div>
+            <div class="gallery" id="gallery-root"></div>
+        </div>
+    </section>
+
+    <section class="benefits-section">
+        <div class="container">
+            <h2 class="section-title">Почему выбирают нас?</h2>
+            <div class="benefits-grid">
+                <div class="benefit-card">
+                    <h3>🚀 До 3 минут</h3>
+                    <p>Забудьте про лимиты в 5 секунд. Обрабатывайте целые клипы, интервью или памятные моменты одним файлом.</p>
+                </div>
+                <div class="benefit-card">
+                    <h3>💎 Кристальное 4K</h3>
+                    <p>Превращаем размытые видео с телефона в четкую, детальную картинку, достойную большого экрана.</p>
+                </div>
+                <div class="benefit-card">
+                    <h3>🚫 Чистый результат</h3>
+                    <p>Видео принадлежит только вам. Никаких водяных знаков, логотипов и рекламы поверх изображения.</p>
+                </div>
+                <div class="benefit-card">
+                    <h3>🛡️ Приватность</h3>
+                    <p>Ваши видео удаляются с серверов сразу после обработки. Полная конфиденциальность и безопасность.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="pricing-section">
+        <div class="container">
+            <h2 class="section-title">Честная стоимость</h2>
+            <p style="text-align: center; color: #888; max-width: 600px; margin: 0 auto;">
+                Нет подписок. Вы платите только за время вашего видео. <br>Стоимость рассчитывается автоматически.
+            </p>
+
+            <div class="pricing-grid">
+                <div class="rate-card">
+                    <div class="rate-header">
+                        <div>
+                            <div class="rate-title">Плавность (60 FPS)</div>
+                            <div class="rate-min">Минимальный заказ: 39₽</div>
+                        </div>
+                        <div class="rate-price">69₽ <span style="font-size: 1rem; color:#888">/ мин</span></div>
+                    </div>
+                    <div class="rate-details">
+                        <div class="rate-row">
+                            <span class="rate-label">Видео 10 сек</span>
+                            <span class="rate-value">~39₽</span>
+                        </div>
+                        <div class="rate-row">
+                            <span class="rate-label">Видео 60 сек</span>
+                            <span class="rate-value">69₽</span>
+                        </div>
+                         <div class="rate-row">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rate-card">
+                    <div class="rate-header">
+                        <div>
+                            <div class="rate-title">Качество (4K)</div>
+                            <div class="rate-min">Минимальный заказ: 69₽</div>
+                        </div>
+                        <div class="rate-price">99₽ <span style="font-size: 1rem; color:#888">/ мин</span></div>
+                    </div>
+                    <div class="rate-details">
+                        <div class="rate-row">
+                            <span class="rate-label">Видео 10 сек</span>
+                            <span class="rate-value">~69₽</span>
+                        </div>
+                        <div class="rate-row">
+                            <span class="rate-label">Видео 60 сек</span>
+                            <span class="rate-value">99₽</span>
+                        </div>
+                        <div class="rate-row">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="price-note">
+                * Стоимость округляется до 10₽ в пользу удобства.<br>
+                Для исходников высокого разрешения (Full HD и выше) применяется наценка +20% за нагрузку на оборудование.
+            </div>
+        </div>
+    </section>
+
+    <section class="faq-section">
+        <div class="container">
+            <h2 class="section-title">Частые вопросы</h2>
+            
+            <div class="faq-item">
+                <details>
+                    <summary>⏱️ Сколько времени занимает обработка?</summary>
+                    <p>В среднем — от 5 до 15 минут. Это зависит от длительности видео и выбранной опции (рендер в 4K на мощных GPU требует больше времени, чем 60 FPS). Вы получите уведомление о готовности.</p>
+                </details>
+            </div>
+
+            <div class="faq-item">
+                <details>
+                    <summary>🎞 Какие форматы поддерживаются?</summary>
+                    <p>Мы поддерживаем все популярные форматы: MP4, MOV, AVI, MKV. Максимальный размер файла для загрузки напрямую в Telegram: 20 МБ (для больших файлов используйте сжатие или пишите в поддержку).</p>
+                </details>
+            </div>
+
+            <div class="faq-item">
+                <details>
+                    <summary>✨ Почему видео пришло ссылкой?</summary>
+                    <p>Если готовый файл весит больше 50 МБ, Telegram не позволяет боту отправить его напрямую в чат. В таком случае мы загружаем его в защищенное облако и даем вам персональную ссылку. Она действует 24 часа, после чего файл удаляется.</p>
+                </details>
+            </div>
+
+            <div class="faq-item">
+                <details>
+                    <summary>🛡️ Это безопасно? Кто увидит видео?</summary>
+                    <p>Обработка происходит автоматически на сервере. Модераторы имеют доступ к файлам исключительно для контроля качества работы нейросетей и проверки на соблюдение правил сервиса (запрещенный контент). Мы гарантируем конфиденциальность ваших личных данных.</p>
+                </details>
+            </div>
+
+            <div class="faq-item">
+                <details>
+                    <summary>⛔ Какой контент запрещен?</summary>
+                    <p>Сервис работает в соответствии с законодательством РФ. Запрещена обработка материалов 18+, порнографии, сцен насилия и противоправных действий. Такие заказы будут отклонены модерацией без возврата средств при злостном нарушении.</p>
+                </details>
+            </div>
+
+            <div class="faq-item">
+                <details>
+                    <summary>💳 Отмена и возврат средств</summary>
+                    <p>Если вы передумали, вы можете нажать кнопку "Отменить" до начала обработки. Если вы не подтвердите заказ в течение 24 часов, средства вернутся автоматически. Оплата проходит через официальную кассу ЮKassa (чек приходит на почту).</p>
+                </details>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>Remake AI © 2025. Все права защищены.</p>
+            <p style="margin-top: 10px; opacity: 0.5;">Сервис улучшения видео</p>
+        </div>
+    </footer>
+
+    <script>
+        const VIDEOS = [
+            {   
+                // 1. Девушка
+                category: "people",
+                title: "👩 Портрет",
+                badge: "4K Upscale",
+                afterUrl: "videos/Before1.mp4",
+                labelAfter: "Original",
+                beforeUrl: "videos/After1.mp4",
+                labelBefore: "4K"
+            },
+            {   
+                // 2. Горы
+                category: "nature",
+                title: "🏔️ Горы и Озеро",
+                badge: "4K Upscale",
+                afterUrl: "videos/Before2.mp4",
+                labelAfter: "Original",
+                beforeUrl: "videos/After2.mp4",
+                labelBefore: "4K"
+            },
+            {   
+                // 3. Аниме
+                category: "anime",
+                title: "👾 Аниме",
+                badge: "4K Upscale",
+                afterUrl: "videos/Before3.mp4",
+                labelAfter: "Original",
+                beforeUrl: "videos/After3.mp4",
+                labelBefore: "4K"
+            },
+            {   
+                // 4. Лыжи пейзаж
+                category: "nature people",
+                title: "❄️ Зимний пейзаж",
+                badge: "60 FPS",
+                afterUrl: "videos/Before4.mp4",
+                labelAfter: "24 FPS",
+                beforeUrl: "videos/After4.mp4",
+                labelBefore: "60 FPS"
+            },
+            {   
+                // 5. Япония
+                category: "nature",
+                title: "🏙️ Япония (Таймлапс)",
+                badge: "60 FPS",
+                afterUrl: "videos/Before5.mp4",
+                labelAfter: "24 FPS",
+                beforeUrl: "videos/After5.mp4",
+                labelBefore: "60 FPS"
+            },
+            {   
+                // 6. Скубиду
+                category: "anime",
+                title: "🏙️ Скубиду",
+                badge: "4K Upscale",
+                afterUrl: "videos/Before6.mp4",
+                labelAfter: "Original",
+                beforeUrl: "videos/After6.mp4",
+                labelBefore: "4K"
+            }
+        ];
+
+        const galleryRoot = document.getElementById('gallery-root');
+
+        VIDEOS.forEach(video => {
+            const item = document.createElement('div');
+            item.className = `showcase-item ${video.category}`;
+            item.innerHTML = `
+                <div class="item-header">
+                    <div class="item-title">${video.title}</div>
+                    <span class="badge">${video.badge}</span>
+                </div>
+                <div class="video-compare-wrapper">
+                    <div class="video-layer">
+                        <video class="vid-before" muted loop playsinline 
+                               disablePictureInPicture 
+                               controlsList="nodownload noremoteplayback">
+                            <source src="${video.beforeUrl}" type="video/mp4">
+                        </video>
+                        <span class="label label-before">${video.labelBefore}</span>
+                    </div>
+                    <div class="video-layer after-layer">
+                        <div class="content-fixer">
+                            <video class="vid-after" muted loop playsinline 
+                                   disablePictureInPicture 
+                                   controlsList="nodownload noremoteplayback">
+                                <source src="${video.afterUrl}" type="video/mp4">
+                            </video>
+                            <span class="label label-after">${video.labelAfter}</span>
+                        </div>
+                    </div>
+                    <div class="handle"></div>
+                </div>
+            `;
+            galleryRoot.appendChild(item);
+        });
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const wrappers = document.querySelectorAll('.video-compare-wrapper');
+
+            wrappers.forEach(wrapper => {
+                const afterLayer = wrapper.querySelector('.after-layer');
+                const contentFixer = wrapper.querySelector('.content-fixer'); 
+                const handle = wrapper.querySelector('.handle');
+                const vidBefore = wrapper.querySelector('.vid-before');
+                const vidAfter = wrapper.querySelector('.vid-after');
+                
+                let isDragging = false;
+
+                const fixWidth = () => {
+                    if (wrapper.offsetParent === null) return;
+                    const width = wrapper.getBoundingClientRect().width;
+                    contentFixer.style.width = width + 'px';
+                };
+                
+                window.addEventListener('resize', fixWidth);
+                setTimeout(fixWidth, 100);
+
+                const move = (e) => {
+                    if (!isDragging) return;
+                    if(e.type === 'mousemove') e.preventDefault(); 
+                    const rect = wrapper.getBoundingClientRect();
+                    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                    let x = clientX - rect.left;
+                    if (x < 0) x = 0; if (x > rect.width) x = rect.width;
+                    const percent = (x / rect.width) * 100;
+                    afterLayer.style.width = percent + "%";
+                    handle.style.left = percent + "%";
+                };
+
+                wrapper.addEventListener('mousedown', (e) => { isDragging = true; move(e); });
+                window.addEventListener('mouseup', () => { isDragging = false; });
+                wrapper.addEventListener('mousemove', move);
+                wrapper.addEventListener('touchstart', (e) => { isDragging = true; move(e); });
+                window.addEventListener('touchend', () => { isDragging = false; });
+                wrapper.addEventListener('touchmove', move);
+
+                const checkSync = () => {
+                    if (Math.abs(vidBefore.currentTime - vidAfter.currentTime) > 0.1) {
+                        vidAfter.currentTime = vidBefore.currentTime;
+                    }
+                    requestAnimationFrame(checkSync);
+                };
+
+                const startVideos = () => {
+                    vidBefore.play().catch(()=>{});
+                    vidAfter.play().catch(()=>{});
+                    checkSync();
+                };
+
+                let loadedCount = 0;
+                const onReady = () => {
+                    loadedCount++;
+                    if (loadedCount >= 2) { startVideos(); fixWidth(); }
+                };
+
+                if (vidBefore.readyState >= 3) onReady(); else vidBefore.addEventListener('loadeddata', onReady);
+                if (vidAfter.readyState >= 3) onReady(); else vidAfter.addEventListener('loadeddata', onReady);
+
+                vidBefore.addEventListener('play', () => vidAfter.play());
+                vidBefore.addEventListener('pause', () => vidAfter.pause());
+                vidBefore.addEventListener('ended', () => {
+                    vidBefore.currentTime = 0; vidAfter.currentTime = 0;
+                    vidBefore.play(); vidAfter.play();
+                });
+            });
+        });
+
+        function filterSelection(category) {
+            const items = document.getElementsByClassName("showcase-item");
+            const btns = document.getElementsByClassName("tab-btn");
+            for (let btn of btns) {
+                btn.classList.remove("active");
+                if (btn.getAttribute("onclick").includes(category)) btn.classList.add("active");
+            }
+            if (category == "all") category = "";
+            for (let i = 0; i < items.length; i++) {
+                items[i].classList.remove("hidden");
+                if (items[i].className.indexOf(category) == -1) items[i].classList.add("hidden");
+            }
+            setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 50);
+        }
+    </script>
+</body>
+</html>
